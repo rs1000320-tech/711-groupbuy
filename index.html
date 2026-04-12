@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>7-11 揪團購</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@600;700&display=swap');
+:root {
+  --red:#E8321C; --orange:#F47920; --green:#007B40;
+  --line:#06C755; --ink:#1C1C1E; --muted:#8e8e93;
+  --border:#e5e5ea; --surface:#F2F2F7; --white:#fff;
+  --accent:#FFD400;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;max-width:430px;margin:0 auto}
+
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .4s}
+.loading-screen.hide{opacity:0;pointer-events:none}
+.loading-logo{font-family:'Oswald',sans-serif;font-size:32px;color:var(--white);margin-bottom:8px}
+.loading-logo em{color:var(--red);font-style:normal}
+.loading-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:24px}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--line);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HERO */
+.hero{background:linear-gradient(160deg,var(--red),var(--orange));padding:20px 16px 18px;color:var(--white);position:relative;overflow:hidden}
+.hero::after{content:'🏪';position:absolute;right:12px;bottom:-6px;font-size:60px;opacity:.15}
+.user-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.avatar{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.5);object-fit:cover;background:rgba(255,255,255,.2)}
+.user-name{font-size:14px;font-weight:700}
+.user-tag{font-size:11px;opacity:.75;margin-top:1px}
+.buy-name{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;line-height:1.2;margin-bottom:8px}
+.dead-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.22);color:var(--white);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+
+/* ALREADY ORDERED */
+.already-card{margin:16px;background:var(--white);border-radius:14px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.already-icon{font-size:48px;margin-bottom:8px}
+.already-ttl{font-size:18px;font-weight:900;margin-bottom:4px}
+.already-sub{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* PRODUCTS */
+.sec-lbl{padding:14px 16px 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.prods{padding:0 12px;display:flex;flex-direction:column;gap:8px;padding-bottom:100px}
+.pc{background:var(--white);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);border:2px solid transparent;cursor:pointer;transition:all .2s}
+.pc.sel{border-color:var(--red);background:#fff8f7}
+.pc-em{font-size:32px;flex-shrink:0}
+.pc-info{flex:1;min-width:0}
+.pc-name{font-size:15px;font-weight:700}
+.pc-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.pc-price{font-family:'Oswald',sans-serif;font-size:20px;color:var(--red);font-weight:600;flex-shrink:0}
+.qrow{display:none;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.qrow.show{display:flex}
+.qctrl{display:flex;align-items:center;gap:12px}
+.qbtn{width:32px;height:32px;border-radius:50%;border:2px solid var(--ink);background:var(--white);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.qbtn:active{background:var(--ink);color:var(--white)}
+.qnum{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;min-width:28px;text-align:center}
+.qsub{font-size:13px;font-weight:700;color:var(--green)}
+
+/* BOTTOM */
+.bot{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--ink);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:100}
+.bot-lbl{font-size:11px;color:rgba(255,255,255,.45)}
+.bot-amt{font-family:'Oswald',sans-serif;font-size:24px;color:var(--accent);font-weight:700}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:none;border-radius:10px;font-size:14px;font-weight:700;padding:11px 18px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s;white-space:nowrap}
+.btn:active{transform:scale(.96);opacity:.85}
+.btn-red{background:var(--red);color:var(--white)}
+.btn-green{background:var(--green);color:var(--white)}
+.btn-line{background:var(--line);color:var(--white)}
+.btn-outline{background:var(--white);color:var(--ink);border:1.5px solid var(--border)}
+.btn-full{width:100%}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:8px}
+
+/* SUCCESS */
+.suc{padding:32px 16px 100px;display:none;animation:fi .3s ease}
+.suc.show{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.suc-icon{font-size:72px;text-align:center;margin-bottom:12px;animation:pop .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.suc-ttl{font-family:'Oswald',sans-serif;font-size:28px;text-align:center;margin-bottom:6px}
+.suc-sub{font-size:13px;color:var(--muted);text-align:center;line-height:1.6;margin-bottom:20px}
+.sum-card{background:var(--white);border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:12px}
+.sumrow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.sumrow:last-child{border-bottom:none}
+.sumkey{color:var(--muted)}
+.sumval{font-weight:700;text-align:right;max-width:65%}
+
+/* ERROR */
+.err-screen{padding:40px 20px;text-align:center;display:none}
+.err-screen.show{display:block}
+.err-icon{font-size:56px;margin-bottom:12px}
+.err-ttl{font-size:18px;font-weight:900;margin-bottom:6px}
+.err-sub{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--white);padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- 載入畫面 -->
+<div class="loading-screen" id="loading">
+  <div class="loading-logo"><em>7-11</em> 揪團購</div>
+  <div class="loading-sub">正在取得你的 LINE 資料…</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- 主畫面 -->
+<div id="main" style="display:none">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="user-row">
+      <img class="avatar" id="u-avatar" src="" alt="">
+      <div>
+        <div class="user-name" id="u-name">載入中…</div>
+        <div class="user-tag">✅ 已透過 LINE 驗證</div>
+      </div>
+    </div>
+    <div class="buy-name" id="buy-title">載入中…</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="dead-chip">⏰ 截止 <span id="buy-deadline">-</span></div>
+    </div>
+  </div>
+
+  <!-- 已下單提示 -->
+  <div class="already-card" id="already-view" style="display:none">
+    <div class="already-icon">✅</div>
+    <div class="already-ttl">你已經下過單了！</div>
+    <div class="already-sub">如需修改，請在群組直接聯絡店員</div>
+  </div>
+
+  <!-- 商品選擇 -->
+  <div id="order-view">
+    <div class="sec-lbl">📦 選擇商品</div>
+    <div class="prods" id="prods"></div>
+  </div>
+
+  <!-- 成功畫面 -->
+  <div class="suc" id="suc-view">
+    <div class="suc-icon">🎉</div>
+    <div class="suc-ttl">下單成功！</div>
+    <div class="suc-sub" id="suc-sub">感謝你的訂購</div>
+    <div class="sum-card" id="suc-sum"></div>
+    <button class="btn btn-line btn-full btn-sm" onclick="sendLineMsg()" id="send-line-btn">
+      📤 發送確認到群組
+    </button>
+    <div style="height:8px"></div>
+    <button class="btn btn-outline btn-full btn-sm" onclick="copyOrder()">📋 複製訂單訊息</button>
+  </div>
+
+  <!-- 錯誤畫面 -->
+  <div class="err-screen" id="err-view">
+    <div class="err-icon">😢</div>
+    <div class="err-ttl" id="err-ttl">發生錯誤</div>
+    <div class="err-sub" id="err-sub"></div>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+<div class="bot" id="bot-bar" style="display:none">
+  <div>
+    <div class="bot-lbl">合計金額</div>
+    <div class="bot-amt" id="total-amt">$0</div>
+  </div>
+  <button class="btn btn-red" id="submit-btn" onclick="submitOrder()">確認下單 →</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// 設定區 — 部署後修改這兩個值
+// ══════════════════════════════════════════════
+const CONFIG = {
+  LIFF_ID:        '2009774173-GjL4NQ1g',           // ← 換成你的 LIFF ID
+  GAS_URL:        'https://script.google.com/macros/s/AKfycby4DbPFuyU8QLq9gdlcWj2MoyYHvSw2beTxel29HEUFDeg8m-VCZdM0ENGHKkWH3wY/exec',   // ← 換成你的 Apps Script 部署網址
+};
+
+// ══════════════════════════════════════════════
+// 狀態
+// ══════════════════════════════════════════════
+let liffInstance = null;
+let user = null;
+let buyData = null;
+let cart = {};
+let lastOrder = null;
+
+// ══════════════════════════════════════════════
+// 初始化
+// ══════════════════════════════════════════════
+async function init() {
+  try {
+    // 1. 初始化 LIFF
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+
+    // 2. 取得 LINE 用戶資料
+    const profile = await liff.getProfile();
+    user = {
+      userId:      profile.userId,
+      displayName: profile.displayName,
+      pictureUrl:  profile.pictureUrl || 'https://via.placeholder.com/38',
+      accessToken: liff.getAccessToken(),
+    };
+
+    // 顯示用戶
+    document.getElementById('u-name').textContent = user.displayName;
+    document.getElementById('u-avatar').src = user.pictureUrl;
+
+    // 3. 取得團購資料
+    const res = await api({ action: 'getActiveBuy' });
+    if (res.error) throw new Error(res.error);
+
+    buyData = res;
+    document.getElementById('buy-title').textContent = buyData.title;
+    document.getElementById('buy-deadline').textContent = formatDeadline(buyData.deadline);
+
+    // 4. 渲染商品
+    renderProducts(buyData.products);
+    document.getElementById('bot-bar').style.display = 'flex';
+    showMain();
+
+  } catch (err) {
+    showError(err.message === '目前沒有開放中的團購'
+      ? '目前沒有開放的團購'
+      : '載入失敗', err.message);
+  }
+}
+
+// ══════════════════════════════════════════════
+// 渲染商品
+// ══════════════════════════════════════════════
+function renderProducts(products) {
+  const wrap = document.getElementById('prods');
+  wrap.innerHTML = products.map(p => `
+    <div class="pc" id="pc-${p.id}" onclick="selP('${p.id}',${p.price})">
+      <div class="pc-em">${p.emoji}</div>
+      <div class="pc-info">
+        <div class="pc-name">${p.name}</div>
+        ${p.desc ? `<div class="pc-desc">${p.desc}</div>` : ''}
+        <div class="qrow" id="qr-${p.id}">
+          <div class="qctrl">
+            <button class="qbtn" onclick="chQ(event,'${p.id}',${p.price},-1)">−</button>
+            <div class="qnum" id="qn-${p.id}">1</div>
+            <button class="qbtn" onclick="chQ(event,'${p.id}',${p.price},1)">+</button>
+          </div>
+          <div class="qsub" id="qs-${p.id}">$${p.price}</div>
+        </div>
+      </div>
+      <div class="pc-price">$${p.price}</div>
+    </div>
+  `).join('');
+}
+
+function selP(id, price) {
+  const card = document.getElementById('pc-' + id);
+  const qrow = document.getElementById('qr-' + id);
+  if (card.classList.contains('sel')) return;
+  card.classList.add('sel');
+  qrow.classList.add('show');
+  if (!cart[id]) cart[id] = { qty: 1, price };
+  updQ(id); updTotal();
+}
+
+function chQ(e, id, price, d) {
+  e.stopPropagation();
+  cart[id] = cart[id] || { qty: 0, price };
+  cart[id].qty = Math.max(0, cart[id].qty + d);
+  if (cart[id].qty === 0) {
+    document.getElementById('pc-' + id).classList.remove('sel');
+    document.getElementById('qr-' + id).classList.remove('show');
+    delete cart[id];
+  } else updQ(id);
+  updTotal();
+}
+
+function updQ(id) {
+  const q = cart[id]?.qty || 0;
+  document.getElementById('qn-' + id).textContent = q;
+  document.getElementById('qs-' + id).textContent = '$' + (q * cart[id].price);
+}
+
+function updTotal() {
+  const total = Object.values(cart).reduce((s, v) => s + v.qty * v.price, 0);
+  document.getElementById('total-amt').textContent = '$' + total;
+}
+
+// ══════════════════════════════════════════════
+// 下單
+// ══════════════════════════════════════════════
+async function submitOrder() {
+  const btn = document.getElementById('submit-btn');
+  if (Object.keys(cart).length === 0) { toast('❗ 請至少選一樣商品'); return; }
+
+  btn.textContent = '送出中…';
+  btn.disabled = true;
+
+  const items = Object.entries(cart).map(([id, v]) => ({ id, qty: v.qty }));
+
+  try {
+    const res = await api({
+      action:      'submitOrder',
+      lineUserId:  user.userId,
+      displayName: user.displayName,
+      avatarUrl:   user.pictureUrl,
+      groupBuyId:  buyData.id,
+      items,
+    });
+
+    if (res.alreadyOrdered) {
+      document.getElementById('order-view').style.display = 'none';
+      document.getElementById('already-view').style.display = 'block';
+      document.getElementById('bot-bar').style.display = 'none';
+      return;
+    }
+
+    if (res.error) throw new Error(res.error);
+
+    lastOrder = res;
+    showSuccess(res);
+
+  } catch (err) {
+    toast('❌ ' + err.message);
+    btn.textContent = '確認下單 →';
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════════
+// 成功畫面
+// ══════════════════════════════════════════════
+function showSuccess(order) {
+  document.getElementById('order-view').style.display = 'none';
+  document.getElementById('bot-bar').style.display = 'none';
+  document.getElementById('suc-sub').textContent =
+    `${order.displayName} 的訂單已確認！\n截止前完成付款：${buyData.payment}`;
+  document.getElementById('suc-sum').innerHTML = `
+    <div class="sumrow"><span class="sumkey">姓名</span><span class="sumval">${order.displayName}</span></div>
+    <div class="sumrow"><span class="sumkey">商品</span><span class="sumval">${order.itemsStr}</span></div>
+    <div class="sumrow"><span class="sumkey">合計</span><span class="sumval" style="color:var(--red);font-size:16px">$${order.total}</span></div>
+    <div class="sumrow"><span class="sumkey">付款方式</span><span class="sumval">${buyData.payment}</span></div>
+  `;
+  document.getElementById('suc-view').classList.add('show');
+
+  // 若不在 LINE 內就隱藏「發送到群組」按鈕
+  if (!liff.isInClient()) {
+    document.getElementById('send-line-btn').style.display = 'none';
+  }
+}
+
+// 直接從 LIFF 發訊息回群組（不需使用者手動複製）
+async function sendLineMsg() {
+  try {
+    await liff.sendMessages([{
+      type: 'text',
+      text: `✅【${lastOrder.buyTitle}】\n${lastOrder.displayName} 已下單！\n\n🛒 ${lastOrder.itemsStr}\n💰 合計：$${lastOrder.total}\n💳 付款：${buyData.payment}`
+    }]);
+    toast('✅ 已發送到 LINE 群組！');
+  } catch (e) {
+    toast('❌ 發送失敗，請手動複製');
+  }
+}
+
+function copyOrder() {
+  if (!lastOrder) return;
+  const msg = `✅【${lastOrder.buyTitle}】\n${lastOrder.displayName} 已下單！\n\n🛒 ${lastOrder.itemsStr}\n💰 合計：$${lastOrder.total}\n💳 ${buyData.payment}`;
+  navigator.clipboard?.writeText(msg);
+  toast('✅ 已複製！');
+}
+
+// ══════════════════════════════════════════════
+// 工具函式
+// ══════════════════════════════════════════════
+async function api(body) {
+  const res = await fetch(CONFIG.GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // GAS 用 text/plain 避免 CORS preflight
+    body: JSON.stringify(body),
+    redirect: 'follow',
+  });
+  return res.json();
+}
+
+function formatDeadline(iso) {
+  const d = new Date(iso);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function showMain() {
+  document.getElementById('loading').classList.add('hide');
+  setTimeout(() => document.getElementById('loading').style.display = 'none', 400);
+  document.getElementById('main').style.display = 'block';
+}
+
+function showError(title, sub) {
+  showMain();
+  document.getElementById('order-view').style.display = 'none';
+  document.getElementById('bot-bar').style.display = 'none';
+  document.getElementById('err-ttl').textContent = title;
+  document.getElementById('err-sub').textContent = sub || '';
+  document.getElementById('err-view').classList.add('show');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// 啟動
+init();
+</script>
+</body>
+</html>
