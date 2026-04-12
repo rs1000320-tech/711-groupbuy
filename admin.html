@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>7-11 揪團購 · 店員後台</title>
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@600;700&display=swap');
 :root{
@@ -106,8 +106,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* PASSWORD SCREEN */
-.pw-screen{position:fixed;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200;display:none}
-.pw-screen.show{display:flex}
+.pw-screen{position:fixed;inset:0;background:var(--surface);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:200}
 .pw-icon{font-size:48px;margin-bottom:12px}
 .pw-ttl{font-size:20px;font-weight:900;margin-bottom:4px}
 .pw-sub{font-size:13px;color:var(--muted);margin-bottom:20px;text-align:center}
@@ -236,10 +235,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
 // ══════════════════════════════════════════════
 const CONFIG = {
   LIFF_ID:        '2009774173-Bdaku6TS',     // ← 另一個 LIFF ID（給店員用）
-  GAS_URL:        'https://script.google.com/macros/s/AKfycby4DbPFuyU8QLq9gdlcWj2MoyYHvSw2beTxel29HEUFDeg8m-VCZdM0ENGHKkWH3wY/exec',   // ← 同一個 Apps Script 網址
-  ADMIN_KEY:      '666666',                        // ← 由密碼輸入取得
-  SHEET_URL:      'https://docs.google.com/spreadsheets/d/1zyiM4fiErV14YEaX5cV87qm3rXxhRrHXe2A6PdxIRKY/edit?gid=2115586586#gid=2115586586',  // ← 試算表網址
-  ALLOWED_USERS:  ['U0f47d8528b0ef72fe9b4df614ecd160e'],    // ← 填入店員的 LINE userId 白名單
+  GAS_URL:        'YOUR_APPS_SCRIPT_URL',   // ← 同一個 Apps Script 網址
+  ADMIN_KEY:      '',                        // ← 由密碼輸入取得
+  SHEET_URL:      'YOUR_GOOGLE_SHEET_URL',  // ← 試算表網址
+  ALLOWED_USERS:  ['YOUR_LINE_USER_ID'],    // ← 填入店員的 LINE userId 白名單
 };
 
 let user = null;
@@ -253,19 +252,34 @@ let editProds = [
 // 初始化
 // ══════════════════════════════════════════════
 async function init() {
-  await liff.init({ liffId: CONFIG.LIFF_ID });
-  if (!liff.isLoggedIn()) { liff.login(); return; }
-  const profile = await liff.getProfile();
-  user = { userId: profile.userId, displayName: profile.displayName };
-  hideLoading();
-  document.getElementById('pw-screen').classList.add('show');
-  loadCurrentBuy();
-  renderProdEdit();
-}
+  try {
+    await liff.init({ liffId: CONFIG.LIFF_ID });
 
-  hideLoading();
-  // 顯示密碼輸入
-  document.getElementById('pw-screen').classList.add('show');
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+
+    const profile = await liff.getProfile();
+    user = { userId: profile.userId, displayName: profile.displayName };
+
+    hideLoading();
+
+    // 白名單驗證
+    if (CONFIG.ALLOWED_USERS.length > 0 && !CONFIG.ALLOWED_USERS.includes(user.userId)) {
+      const pw = document.getElementById('pw-screen');
+      pw.style.display = 'flex';
+      pw.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:48px">⛔</div><div style="font-size:18px;font-weight:900;margin-top:12px">無存取權限</div><div style="font-size:13px;color:#888;margin-top:8px">userId: ' + user.userId + '</div></div>';
+      return;
+    }
+
+    // 顯示密碼輸入
+    const pw = document.getElementById('pw-screen');
+    pw.style.display = 'flex';
+
+  } catch(err) {
+    hideLoading();
+    const pw = document.getElementById('pw-screen');
+    pw.style.display = 'flex';
+    pw.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:48px">❌</div><div style="font-size:16px;font-weight:900;margin-top:12px">初始化失敗</div><div style="font-size:12px;color:#888;margin-top:8px">' + err.message + '</div></div>';
+  }
 }
 
 function checkPw() {
