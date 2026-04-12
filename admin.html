@@ -254,21 +254,14 @@ let editProds = [
 // ══════════════════════════════════════════════
 async function init() {
   await liff.init({ liffId: CONFIG.LIFF_ID });
-
   if (!liff.isLoggedIn()) { liff.login(); return; }
-
   const profile = await liff.getProfile();
   user = { userId: profile.userId, displayName: profile.displayName };
-
-  // 白名單驗證
-  if (!CONFIG.ALLOWED_USERS.includes(user.userId)) {
-    hideLoading();
-    showToast('⛔ 你沒有存取權限');
-    document.getElementById('pw-screen').innerHTML =
-      '<div style="padding:40px;text-align:center"><div style="font-size:48px">⛔</div><div style="font-size:18px;font-weight:900;margin-top:12px">無存取權限</div></div>';
-    document.getElementById('pw-screen').classList.add('show');
-    return;
-  }
+  hideLoading();
+  document.getElementById('pw-screen').classList.add('show');
+  loadCurrentBuy();
+  renderProdEdit();
+}
 
   hideLoading();
   // 顯示密碼輸入
