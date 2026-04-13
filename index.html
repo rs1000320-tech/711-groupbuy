@@ -209,8 +209,18 @@ async function init() {
     document.getElementById('u-avatar').src = user.pictureUrl;
 
     // 從網址取得 buyId 參數（記事本連結帶的）
-    const urlParams = new URLSearchParams(window.location.search);
-    const buyId = urlParams.get('buyId');
+    // LIFF 會把參數放在 liff.state 裡，需要解碼
+let buyId = null;
+const urlParams = new URLSearchParams(window.location.search);
+buyId = urlParams.get('buyId');
+if (!buyId) {
+  // 從 liff.state 解析
+  const liffState = urlParams.get('liff.state');
+  if (liffState) {
+    const decoded = new URLSearchParams(decodeURIComponent(liffState));
+    buyId = decoded.get('buyId');
+  }
+}
 
     if (buyId) {
       // 有指定 buyId → 直接載入該團
