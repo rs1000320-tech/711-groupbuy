@@ -208,19 +208,28 @@ async function init() {
     document.getElementById('u-name').textContent = user.displayName;
     document.getElementById('u-avatar').src = user.pictureUrl;
 
-    // 從網址取得 buyId 參數（記事本連結帶的）
-    // LIFF 會把參數放在 liff.state 裡，需要解碼
-let buyId = null;
-const urlParams = new URLSearchParams(window.location.search);
-buyId = urlParams.get('buyId');
-if (!buyId) {
-  // 從 liff.state 解析
-  const liffState = urlParams.get('liff.state');
-  if (liffState) {
-    const decoded = new URLSearchParams(decodeURIComponent(liffState));
-    buyId = decoded.get('buyId');
-  }
-}
+    // LIFF 會把參數編碼進 liff.state，需要解碼才能取得 buyId
+    let buyId = null;
+    try {
+      // 方法1：直接從網址取（電腦瀏覽器測試用）
+      const urlParams = new URLSearchParams(window.location.search);
+      buyId = urlParams.get('buyId');
+
+      // 方法2：從 liff.state 解碼（LINE 內開啟時）
+      if (!buyId) {
+        const liffState = urlParams.get('liff.state');
+        if (liffState) {
+          const decoded = new URLSearchParams(decodeURIComponent(liffState));
+          buyId = decoded.get('buyId');
+        }
+      }
+
+      // 方法3：從 hash 取（部分情況）
+      if (!buyId && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.slice(1));
+        buyId = hashParams.get('buyId');
+      }
+    } catch(e) { buyId = null; }
 
     if (buyId) {
       // 有指定 buyId → 直接載入該團
