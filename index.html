@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>7-11 揪團購</title>
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@600;700&display=swap');
 :root {
@@ -177,8 +177,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
 // 設定區 — 部署後修改這兩個值
 // ══════════════════════════════════════════════
 const CONFIG = {
-  LIFF_ID:        '2009774173-GjL4NQ1g',           // ← 換成你的 LIFF ID
-  GAS_URL:        'https://script.google.com/macros/s/AKfycby4DbPFuyU8QLq9gdlcWj2MoyYHvSw2beTxel29HEUFDeg8m-VCZdM0ENGHKkWH3wY/exec',   // ← 換成你的 Apps Script 部署網址
+  LIFF_ID:        'YOUR_LIFF_ID',           // ← 換成你的 LIFF ID
+  GAS_URL:        'YOUR_APPS_SCRIPT_URL',   // ← 換成你的 Apps Script 部署網址
 };
 
 // ══════════════════════════════════════════════
@@ -195,15 +195,9 @@ let lastOrder = null;
 // ══════════════════════════════════════════════
 async function init() {
   try {
-    // 1. 初始化 LIFF
     await liff.init({ liffId: CONFIG.LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
 
-    if (!liff.isLoggedIn()) {
-      liff.login();
-      return;
-    }
-
-    // 2. 取得 LINE 用戶資料
     const profile = await liff.getProfile();
     user = {
       userId:      profile.userId,
@@ -211,29 +205,68 @@ async function init() {
       pictureUrl:  profile.pictureUrl || 'https://via.placeholder.com/38',
       accessToken: liff.getAccessToken(),
     };
-
-    // 顯示用戶
     document.getElementById('u-name').textContent = user.displayName;
     document.getElementById('u-avatar').src = user.pictureUrl;
 
-    // 3. 取得團購資料
-    const res = await api({ action: 'getActiveBuy' });
-    if (res.error) throw new Error(res.error);
+    // 從網址取得 buyId 參數（記事本連結帶的）
+    const urlParams = new URLSearchParams(window.location.search);
+    const buyId = urlParams.get('buyId');
 
-    buyData = res;
-    document.getElementById('buy-title').textContent = buyData.title;
-    document.getElementById('buy-deadline').textContent = formatDeadline(buyData.deadline);
-
-    // 4. 渲染商品
-    renderProducts(buyData.products);
-    document.getElementById('bot-bar').style.display = 'flex';
+    if (buyId) {
+      // 有指定 buyId → 直接載入該團
+      const res = await api({ action: 'getBuyById', buyId });
+      if (res.error) throw new Error(res.error);
+      loadBuy(res);
+    } else {
+      // 沒有 buyId → 顯示所有開放中的團購列表
+      const res = await api({ action: 'getAllBuys' });
+      if (res.error) throw new Error(res.error);
+      if (res.buys.length === 1) {
+        loadBuy(res.buys[0]); // 只有一團直接進入
+      } else {
+        showBuyList(res.buys); // 多團顯示選擇列表
+        document.getElementById('buy-title').textContent = '選擇團購';
+        document.getElementById('buy-deadline').textContent = '';
+      }
+    }
     showMain();
 
   } catch (err) {
-    showError(err.message === '目前沒有開放中的團購'
-      ? '目前沒有開放的團購'
-      : '載入失敗', err.message);
+    showError(err.message === '目前沒有開放中的團購' ? '目前沒有開放的團購' : '載入失敗', err.message);
   }
+}
+
+function loadBuy(data) {
+  buyData = data;
+  cart = {};
+  document.getElementById('buy-title').textContent = buyData.title;
+  document.getElementById('buy-deadline').textContent = formatDeadline(buyData.deadline);
+  document.getElementById('order-view').innerHTML = `
+    <div class="sec-lbl">📦 選擇商品</div>
+    <div class="prods" id="prods"></div>`;
+  renderProducts(buyData.products);
+  document.getElementById('bot-bar').style.display = 'flex';
+  updTotal();
+}
+
+function showBuyList(buys) {
+  document.getElementById('bot-bar').style.display = 'none';
+  document.getElementById('order-view').innerHTML = `
+    <div style="padding:12px 12px 0;font-size:11px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px">📋 選擇要參加的團購</div>
+    <div style="padding:8px 12px;display:flex;flex-direction:column;gap:8px;padding-bottom:24px">
+      ${buys.map(b => `
+        <div onclick="selectBuy('${b.id}')" style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.07);cursor:pointer;active:border-color:var(--red)">
+          <div style="font-size:16px;font-weight:900;margin-bottom:4px">${b.title}</div>
+          <div style="font-size:12px;color:#8e8e93">⏰ 截止 ${formatDeadline(b.deadline)}</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:2px">🛒 ${b.products.length} 項商品 ›</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function selectBuy(buyId) {
+  const res = await api({ action: 'getBuyById', buyId });
+  if (res.error) { toast('❌ ' + res.error); return; }
+  loadBuy(res);
 }
 
 // ══════════════════════════════════════════════
