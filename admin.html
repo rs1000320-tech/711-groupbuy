@@ -286,7 +286,7 @@ function checkPw() {
   const pw = document.getElementById('pw-input').value.trim();
   if (!pw) { toast('❗ 請輸入密碼'); return; }
   CONFIG.ADMIN_KEY = pw;
-  document.getElementById('pw-screen').classList.remove('show');
+  document.getElementById('pw-screen').style.display = 'none';
   document.getElementById('main').style.display = 'block';
   document.getElementById('sheets-link').href = CONFIG.SHEET_URL;
 
