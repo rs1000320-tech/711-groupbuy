@@ -4,19 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>7-11 揪團購</title>
-<script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@600;700&display=swap');
-:root {
-  --red:#E8321C; --orange:#F47920; --green:#007B40;
-  --line:#06C755; --ink:#1C1C1E; --muted:#8e8e93;
-  --border:#e5e5ea; --surface:#F2F2F7; --white:#fff;
-  --accent:#FFD400;
-}
+:root{--red:#E8321C;--orange:#F47920;--green:#007B40;--line:#06C755;--ink:#1C1C1E;--muted:#8e8e93;--border:#e5e5ea;--surface:#F2F2F7;--white:#fff;--accent:#FFD400}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;max-width:430px;margin:0 auto}
-
-/* LOADING */
 .loading-screen{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .4s}
 .loading-screen.hide{opacity:0;pointer-events:none}
 .loading-logo{font-family:'Oswald',sans-serif;font-size:32px;color:var(--white);margin-bottom:8px}
@@ -24,8 +17,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
 .loading-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:24px}
 .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--line);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* HERO */
 .hero{background:linear-gradient(160deg,var(--red),var(--orange));padding:20px 16px 18px;color:var(--white);position:relative;overflow:hidden}
 .hero::after{content:'🏪';position:absolute;right:12px;bottom:-6px;font-size:60px;opacity:.15}
 .user-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
@@ -34,16 +25,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
 .user-tag{font-size:11px;opacity:.75;margin-top:1px}
 .buy-name{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;line-height:1.2;margin-bottom:8px}
 .dead-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.22);color:var(--white);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
-
-/* ALREADY ORDERED */
-.already-card{margin:16px;background:var(--white);border-radius:14px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-.already-icon{font-size:48px;margin-bottom:8px}
-.already-ttl{font-size:18px;font-weight:900;margin-bottom:4px}
-.already-sub{font-size:13px;color:var(--muted);line-height:1.6}
-
-/* PRODUCTS */
 .sec-lbl{padding:14px 16px 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.prods{padding:0 12px;display:flex;flex-direction:column;gap:8px;padding-bottom:100px}
+.prods{padding:0 12px;display:flex;flex-direction:column;gap:8px;padding-bottom:8px}
 .pc{background:var(--white);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);border:2px solid transparent;cursor:pointer;transition:all .2s}
 .pc.sel{border-color:var(--red);background:#fff8f7}
 .pc-em{font-size:32px;flex-shrink:0}
@@ -58,23 +41,23 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
 .qbtn:active{background:var(--ink);color:var(--white)}
 .qnum{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;min-width:28px;text-align:center}
 .qsub{font-size:13px;font-weight:700;color:var(--green)}
-
-/* BOTTOM */
+/* 手機末3碼 */
+.phone-section{padding:0 12px 8px}
+.phone-card{background:var(--white);border-radius:14px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.phone-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+.phone-input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:20px;font-weight:700;font-family:'Oswald',sans-serif;outline:none;transition:border-color .2s;color:var(--ink);letter-spacing:4px;text-align:center}
+.phone-input:focus{border-color:var(--red);background:var(--white)}
+.phone-hint{font-size:11px;color:var(--muted);margin-top:4px;text-align:center}
 .bot{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--ink);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:100}
 .bot-lbl{font-size:11px;color:rgba(255,255,255,.45)}
 .bot-amt{font-family:'Oswald',sans-serif;font-size:24px;color:var(--accent);font-weight:700}
-
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:none;border-radius:10px;font-size:14px;font-weight:700;padding:11px 18px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .15s;white-space:nowrap}
 .btn:active{transform:scale(.96);opacity:.85}
 .btn-red{background:var(--red);color:var(--white)}
-.btn-green{background:var(--green);color:var(--white)}
 .btn-line{background:var(--line);color:var(--white)}
 .btn-outline{background:var(--white);color:var(--ink);border:1.5px solid var(--border)}
 .btn-full{width:100%}
 .btn-sm{padding:8px 14px;font-size:13px;border-radius:8px}
-
-/* SUCCESS */
 .suc{padding:32px 16px 100px;display:none;animation:fi .3s ease}
 .suc.show{display:block}
 @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -87,39 +70,27 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
 .sumrow:last-child{border-bottom:none}
 .sumkey{color:var(--muted)}
 .sumval{font-weight:700;text-align:right;max-width:65%}
-
-/* ERROR */
 .err-screen{padding:40px 20px;text-align:center;display:none}
 .err-screen.show{display:block}
 .err-icon{font-size:56px;margin-bottom:12px}
 .err-ttl{font-size:18px;font-weight:900;margin-bottom:6px}
 .err-sub{font-size:13px;color:var(--muted);line-height:1.6}
-
-/* TOAST */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--white);padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-
-<!-- 載入畫面 -->
 <div class="loading-screen" id="loading">
   <div class="loading-logo"><em>7-11</em> 揪團購</div>
   <div class="loading-sub">正在取得你的 LINE 資料…</div>
   <div class="spinner"></div>
 </div>
 
-<!-- 主畫面 -->
 <div id="main" style="display:none">
-
-  <!-- Hero -->
   <div class="hero">
     <div class="user-row">
       <img class="avatar" id="u-avatar" src="" alt="">
-      <div>
-        <div class="user-name" id="u-name">載入中…</div>
-        <div class="user-tag">✅ 已透過 LINE 驗證</div>
-      </div>
+      <div><div class="user-name" id="u-name">載入中…</div><div class="user-tag">✅ 已透過 LINE 驗證</div></div>
     </div>
     <div class="buy-name" id="buy-title">載入中…</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -127,33 +98,36 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
     </div>
   </div>
 
-  <!-- 已下單提示 -->
-  <div class="already-card" id="already-view" style="display:none">
-    <div class="already-icon">✅</div>
-    <div class="already-ttl">你已經下過單了！</div>
-    <div class="already-sub">如需修改，請在群組直接聯絡店員</div>
+  <div id="already-view" style="display:none;margin:16px;background:var(--white);border-radius:14px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+    <div style="font-size:48px;margin-bottom:8px">✅</div>
+    <div style="font-size:18px;font-weight:900;margin-bottom:4px">你已經下過單了！</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6">如需修改，請在群組直接聯絡店員</div>
   </div>
 
-  <!-- 商品選擇 -->
   <div id="order-view">
     <div class="sec-lbl">📦 選擇商品</div>
     <div class="prods" id="prods"></div>
+
+    <!-- 手機末3碼 -->
+    <div class="phone-section">
+      <div class="phone-card">
+        <label class="phone-label">📱 手機末3碼（取貨用）</label>
+        <input class="phone-input" id="phone-input" type="number" maxlength="3" placeholder="821" oninput="if(this.value.length>3)this.value=this.value.slice(0,3)">
+        <div class="phone-hint">店員輸入末3碼可快速找到你的訂單</div>
+      </div>
+    </div>
   </div>
 
-  <!-- 成功畫面 -->
   <div class="suc" id="suc-view">
     <div class="suc-icon">🎉</div>
     <div class="suc-ttl">下單成功！</div>
     <div class="suc-sub" id="suc-sub">感謝你的訂購</div>
     <div class="sum-card" id="suc-sum"></div>
-    <button class="btn btn-line btn-full btn-sm" onclick="sendLineMsg()" id="send-line-btn">
-      📤 發送確認到群組
-    </button>
+    <button class="btn btn-line btn-full btn-sm" onclick="sendLineMsg()" id="send-line-btn">📤 發送確認到群組</button>
     <div style="height:8px"></div>
     <button class="btn btn-outline btn-full btn-sm" onclick="copyOrder()">📋 複製訂單訊息</button>
   </div>
 
-  <!-- 錯誤畫面 -->
   <div class="err-screen" id="err-view">
     <div class="err-icon">😢</div>
     <div class="err-ttl" id="err-ttl">發生錯誤</div>
@@ -161,108 +135,62 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
   </div>
 </div>
 
-<!-- Bottom bar -->
 <div class="bot" id="bot-bar" style="display:none">
-  <div>
-    <div class="bot-lbl">合計金額</div>
-    <div class="bot-amt" id="total-amt">$0</div>
-  </div>
+  <div><div class="bot-lbl">合計金額</div><div class="bot-amt" id="total-amt">$0</div></div>
   <button class="btn btn-red" id="submit-btn" onclick="submitOrder()">確認下單 →</button>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════
-// 設定區 — 部署後修改這兩個值
-// ══════════════════════════════════════════════
 const CONFIG = {
-  LIFF_ID:        '2009774173-GjL4NQ1g',           // ← 換成你的 LIFF ID
-  GAS_URL:        'https://script.google.com/macros/s/AKfycby4DbPFuyU8QLq9gdlcWj2MoyYHvSw2beTxel29HEUFDeg8m-VCZdM0ENGHKkWH3wY/exec',   // ← 換成你的 Apps Script 部署網址
+  LIFF_ID: 'YOUR_LIFF_ID',
+  GAS_URL: 'YOUR_GAS_URL',
 };
 
-// ══════════════════════════════════════════════
-// 狀態
-// ══════════════════════════════════════════════
-let liffInstance = null;
-let user = null;
-let buyData = null;
-let cart = {};
-let lastOrder = null;
+let user = null, buyData = null, cart = {}, lastOrder = null;
 
-// ══════════════════════════════════════════════
-// 初始化
-// ══════════════════════════════════════════════
 async function init() {
   try {
     await liff.init({ liffId: CONFIG.LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
-
     const profile = await liff.getProfile();
-    user = {
-      userId:      profile.userId,
-      displayName: profile.displayName,
-      pictureUrl:  profile.pictureUrl || 'https://via.placeholder.com/38',
-      accessToken: liff.getAccessToken(),
-    };
+    user = { userId: profile.userId, displayName: profile.displayName, pictureUrl: profile.pictureUrl || 'https://via.placeholder.com/38', accessToken: liff.getAccessToken() };
     document.getElementById('u-name').textContent = user.displayName;
     document.getElementById('u-avatar').src = user.pictureUrl;
 
-    // LIFF 會把參數編碼進 liff.state，需要解碼才能取得 buyId
-    let buyId = null;
-    try {
-      // 方法1：直接從網址取（電腦瀏覽器測試用）
-      const urlParams = new URLSearchParams(window.location.search);
-      buyId = urlParams.get('buyId');
-
-      // 方法2：從 liff.state 解碼（LINE 內開啟時）
-      if (!buyId) {
-        const liffState = urlParams.get('liff.state');
-        if (liffState) {
-          const decoded = new URLSearchParams(decodeURIComponent(liffState));
-          buyId = decoded.get('buyId');
-        }
-      }
-
-      // 方法3：從 hash 取（部分情況）
-      if (!buyId && window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.slice(1));
-        buyId = hashParams.get('buyId');
-      }
-    } catch(e) { buyId = null; }
+    const urlParams = new URLSearchParams(window.location.search);
+    const buyId = urlParams.get('buyId');
 
     if (buyId) {
-      // 有指定 buyId → 直接載入該團
       const res = await api({ action: 'getBuyById', buyId });
       if (res.error) throw new Error(res.error);
       loadBuy(res);
     } else {
-      // 沒有 buyId → 顯示所有開放中的團購列表
       const res = await api({ action: 'getAllBuys' });
       if (res.error) throw new Error(res.error);
-      if (res.buys.length === 1) {
-        loadBuy(res.buys[0]); // 只有一團直接進入
-      } else {
-        showBuyList(res.buys); // 多團顯示選擇列表
-        document.getElementById('buy-title').textContent = '選擇團購';
-        document.getElementById('buy-deadline').textContent = '';
-      }
+      if (res.buys.length === 1) { loadBuy(res.buys[0]); }
+      else { showBuyList(res.buys); document.getElementById('buy-title').textContent = '選擇團購'; document.getElementById('buy-deadline').textContent = ''; }
     }
     showMain();
-
   } catch (err) {
     showError(err.message === '目前沒有開放中的團購' ? '目前沒有開放的團購' : '載入失敗', err.message);
   }
 }
 
 function loadBuy(data) {
-  buyData = data;
-  cart = {};
+  buyData = data; cart = {};
   document.getElementById('buy-title').textContent = buyData.title;
   document.getElementById('buy-deadline').textContent = formatDeadline(buyData.deadline);
   document.getElementById('order-view').innerHTML = `
     <div class="sec-lbl">📦 選擇商品</div>
-    <div class="prods" id="prods"></div>`;
+    <div class="prods" id="prods"></div>
+    <div class="phone-section">
+      <div class="phone-card">
+        <label class="phone-label">📱 手機末3碼（取貨用）</label>
+        <input class="phone-input" id="phone-input" type="number" placeholder="821" oninput="if(this.value.length>3)this.value=this.value.slice(0,3)">
+        <div class="phone-hint">店員輸入末3碼可快速找到你的訂單</div>
+      </div>
+    </div>`;
   renderProducts(buyData.products);
   document.getElementById('bot-bar').style.display = 'flex';
   updTotal();
@@ -273,12 +201,11 @@ function showBuyList(buys) {
   document.getElementById('order-view').innerHTML = `
     <div style="padding:12px 12px 0;font-size:11px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px">📋 選擇要參加的團購</div>
     <div style="padding:8px 12px;display:flex;flex-direction:column;gap:8px;padding-bottom:24px">
-      ${buys.map(b => `
-        <div onclick="selectBuy('${b.id}')" style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.07);cursor:pointer;active:border-color:var(--red)">
-          <div style="font-size:16px;font-weight:900;margin-bottom:4px">${b.title}</div>
-          <div style="font-size:12px;color:#8e8e93">⏰ 截止 ${formatDeadline(b.deadline)}</div>
-          <div style="font-size:12px;color:#8e8e93;margin-top:2px">🛒 ${b.products.length} 項商品 ›</div>
-        </div>`).join('')}
+      ${buys.map(b => `<div onclick="selectBuy('${b.id}')" style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.07);cursor:pointer">
+        <div style="font-size:16px;font-weight:900;margin-bottom:4px">${b.title}</div>
+        <div style="font-size:12px;color:#8e8e93">⏰ 截止 ${formatDeadline(b.deadline)}</div>
+        <div style="font-size:12px;color:#8e8e93;margin-top:2px">🛒 ${b.products.length} 項商品 ›</div>
+      </div>`).join('')}
     </div>`;
 }
 
@@ -288,11 +215,9 @@ async function selectBuy(buyId) {
   loadBuy(res);
 }
 
-// ══════════════════════════════════════════════
-// 渲染商品
-// ══════════════════════════════════════════════
 function renderProducts(products) {
   const wrap = document.getElementById('prods');
+  if (!wrap) return;
   wrap.innerHTML = products.map(p => `
     <div class="pc" id="pc-${p.id}" onclick="selP('${p.id}',${p.price})">
       <div class="pc-em">${p.emoji}</div>
@@ -309,16 +234,14 @@ function renderProducts(products) {
         </div>
       </div>
       <div class="pc-price">$${p.price}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function selP(id, price) {
   const card = document.getElementById('pc-' + id);
   const qrow = document.getElementById('qr-' + id);
   if (card.classList.contains('sel')) return;
-  card.classList.add('sel');
-  qrow.classList.add('show');
+  card.classList.add('sel'); qrow.classList.add('show');
   if (!cart[id]) cart[id] = { qty: 1, price };
   updQ(id); updTotal();
 }
@@ -346,80 +269,51 @@ function updTotal() {
   document.getElementById('total-amt').textContent = '$' + total;
 }
 
-// ══════════════════════════════════════════════
-// 下單
-// ══════════════════════════════════════════════
 async function submitOrder() {
   const btn = document.getElementById('submit-btn');
   if (Object.keys(cart).length === 0) { toast('❗ 請至少選一樣商品'); return; }
+  const phoneInput = document.getElementById('phone-input');
+  const phoneLast3 = phoneInput?.value?.trim() || '';
+  if (!phoneLast3 || phoneLast3.length !== 3) { toast('❗ 請填寫手機末3碼'); return; }
 
-  btn.textContent = '送出中…';
-  btn.disabled = true;
-
+  btn.textContent = '送出中…'; btn.disabled = true;
   const items = Object.entries(cart).map(([id, v]) => ({ id, qty: v.qty }));
 
   try {
-    const res = await api({
-      action:      'submitOrder',
-      lineUserId:  user.userId,
-      displayName: user.displayName,
-      avatarUrl:   user.pictureUrl,
-      groupBuyId:  buyData.id,
-      items,
-    });
-
+    const res = await api({ action: 'submitOrder', lineUserId: user.userId, displayName: user.displayName, avatarUrl: user.pictureUrl, groupBuyId: buyData.id, items, phoneLast3 });
     if (res.alreadyOrdered) {
       document.getElementById('order-view').style.display = 'none';
       document.getElementById('already-view').style.display = 'block';
       document.getElementById('bot-bar').style.display = 'none';
       return;
     }
-
     if (res.error) throw new Error(res.error);
-
     lastOrder = res;
     showSuccess(res);
-
   } catch (err) {
     toast('❌ ' + err.message);
-    btn.textContent = '確認下單 →';
-    btn.disabled = false;
+    btn.textContent = '確認下單 →'; btn.disabled = false;
   }
 }
 
-// ══════════════════════════════════════════════
-// 成功畫面
-// ══════════════════════════════════════════════
 function showSuccess(order) {
   document.getElementById('order-view').style.display = 'none';
   document.getElementById('bot-bar').style.display = 'none';
-  document.getElementById('suc-sub').textContent =
-    `${order.displayName} 的訂單已確認！\n截止前完成付款：${buyData.payment}`;
+  document.getElementById('suc-sub').textContent = `${order.displayName} 的訂單已確認！\n截止前完成付款：${buyData.payment}`;
   document.getElementById('suc-sum').innerHTML = `
     <div class="sumrow"><span class="sumkey">姓名</span><span class="sumval">${order.displayName}</span></div>
     <div class="sumrow"><span class="sumkey">商品</span><span class="sumval">${order.itemsStr}</span></div>
     <div class="sumrow"><span class="sumkey">合計</span><span class="sumval" style="color:var(--red);font-size:16px">$${order.total}</span></div>
-    <div class="sumrow"><span class="sumkey">付款方式</span><span class="sumval">${buyData.payment}</span></div>
-  `;
+    <div class="sumrow"><span class="sumkey">付款方式</span><span class="sumval">${buyData.payment}</span></div>`;
   document.getElementById('suc-view').classList.add('show');
-
-  // 若不在 LINE 內就隱藏「發送到群組」按鈕
-  if (!liff.isInClient()) {
-    document.getElementById('send-line-btn').style.display = 'none';
-  }
+  if (!liff.isInClient()) document.getElementById('send-line-btn').style.display = 'none';
 }
 
-// 直接從 LIFF 發訊息回群組（不需使用者手動複製）
 async function sendLineMsg() {
   try {
-    await liff.sendMessages([{
-      type: 'text',
-      text: `✅【${lastOrder.buyTitle}】\n${lastOrder.displayName} 已下單！\n\n🛒 ${lastOrder.itemsStr}\n💰 合計：$${lastOrder.total}\n💳 付款：${buyData.payment}`
-    }]);
+    await liff.sendMessages([{ type: 'text', text: `✅【${lastOrder.buyTitle}】\n${lastOrder.displayName} 已下單！\n\n🛒 ${lastOrder.itemsStr}\n💰 合計：$${lastOrder.total}\n💳 付款：${buyData.payment}` }]);
     toast('✅ 已發送到 LINE 群組！');
-  } catch (e) {
-    toast('❌ 發送失敗，請手動複製');
-  }
+  } catch(e) { toast('❌ 發送失敗，請手動複製'); }
 }
 
 function copyOrder() {
@@ -429,16 +323,8 @@ function copyOrder() {
   toast('✅ 已複製！');
 }
 
-// ══════════════════════════════════════════════
-// 工具函式
-// ══════════════════════════════════════════════
 async function api(body) {
-  const res = await fetch(CONFIG.GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // GAS 用 text/plain 避免 CORS preflight
-    body: JSON.stringify(body),
-    redirect: 'follow',
-  });
+  const res = await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), redirect: 'follow' });
   return res.json();
 }
 
@@ -469,7 +355,6 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2400);
 }
 
-// 啟動
 init();
 </script>
 </body>
