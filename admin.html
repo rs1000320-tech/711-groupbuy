@@ -398,17 +398,109 @@ async function loadCurrentBuy() {
 
 function renderProdEdit() {
   document.getElementById('prod-edit-list').innerHTML = editProds.map((p,i) => `
-    <div class="prod-edit-row">
-      <div class="pe-em" onclick="pickEmoji(${i})">${p.emoji||'🛍'}</div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-        <input class="finp" style="padding:6px 8px;font-size:13px" value="${p.name||''}" placeholder="商品名稱" oninput="editProds[${i}].name=this.value">
-        <input class="finp" style="padding:6px 8px;font-size:13px;width:100px" value="${p.price||''}" type="number" placeholder="價格" oninput="editProds[${i}].price=this.value">
+    <div class="prod-edit-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:12px 0">
+      <!-- 第一行：emoji + 名稱 + 刪除 -->
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="pe-em" onclick="pickEmoji(${i})">${p.emoji||'🛍'}</div>
+        <input class="finp" style="flex:1;padding:6px 10px;font-size:14px;font-weight:700" value="${p.name||''}" placeholder="商品名稱" oninput="editProds[${i}].name=this.value">
+        <div class="pe-del" onclick="removeProd(${i})">✕</div>
       </div>
-      <div class="pe-del" onclick="removeProd(${i})">✕</div>
-    </div>`).join('');
+      <!-- 第二行：特價 + 原價 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--red);display:block;margin-bottom:3px">特價（必填）</label>
+          <input class="finp" style="padding:6px 10px;font-size:14px;font-weight:700;color:var(--red)" value="${p.price||''}" type="number" placeholder="10" oninput="editProds[${i}].price=this.value">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">原價（可空白）</label>
+          <input class="finp" style="padding:6px 10px;font-size:13px" value="${p.origPrice||''}" type="number" placeholder="35" oninput="editProds[${i}].origPrice=this.value">
+        </div>
+      </div>
+      <!-- 第三行：購買上限 + 備註 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">每人上限（可空白）</label>
+          <input class="finp" style="padding:6px 10px;font-size:13px" value="${p.maxQty||''}" type="number" placeholder="3" oninput="editProds[${i}].maxQty=this.value">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">備註（可空白）</label>
+          <input class="finp" style="padding:6px 10px;font-size:13px" value="${p.note||''}" placeholder="限購3隻" oninput="editProds[${i}].note=this.value">
+        </div>
+      </div>
+      <!-- 第四行：圖片上傳 -->
+      <div>
+        <label style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">商品圖片</label>
+        ${p.imageUrl ? `
+          <div style="position:relative;margin-bottom:6px">
+            <img src="${p.imageUrl}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)">
+            <button onclick="removeImg(${i})" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+          </div>` : ''}
+        <label style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px dashed var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:12px;color:var(--muted)">
+          <span style="font-size:20px">📷</span>
+          <span>${p.imageUrl ? '換一張照片' : '點擊上傳照片'}</span>
+          <input type="file" accept="image/*" style="display:none" onchange="uploadImg(event,${i})">
+        </label>
+        <div id="img-status-${i}" style="font-size:11px;color:var(--muted);margin-top:4px;display:none"></div>
+      </div>
+    </div>`).join('<div style="height:1px;background:var(--border)"></div>');
 }
 
-const EMOJIS = ['🛍','🍱','🍣','🍜','🍙','🥤','🧃','🍡','🎁','🥩','🍗','🥚','🧁','🍰','☕','🧋'];
+async function uploadImg(event, idx) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('img-status-' + idx);
+  statusEl.style.display = 'block';
+  statusEl.textContent = '⏳ 上傳中…';
+
+  // 壓縮圖片（最大 800px）
+  const compressed = await compressImage(file, 800);
+  const base64 = compressed.split(',')[1];
+
+  const res = await api({
+    action: 'uploadImage',
+    adminKey: CONFIG.ADMIN_KEY,
+    imageData: base64,
+    fileName: file.name,
+    mimeType: file.type,
+  });
+
+  if (res.error) {
+    statusEl.textContent = '❌ 上傳失敗：' + res.error;
+    return;
+  }
+
+  editProds[idx].imageUrl = res.imageUrl;
+  statusEl.textContent = '✅ 上傳成功！';
+  setTimeout(() => { renderProdEdit(); }, 800);
+}
+
+function removeImg(idx) {
+  editProds[idx].imageUrl = '';
+  renderProdEdit();
+}
+
+function compressImage(file, maxSize) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 function pickEmoji(i) { editProds[i].emoji = EMOJIS[(EMOJIS.indexOf(editProds[i].emoji)+1)%EMOJIS.length]; renderProdEdit(); }
 function addProdRow() { editProds.push({name:'',price:'',emoji:'🛍',desc:''}); renderProdEdit(); }
 function removeProd(i) { if(editProds.length<=1){toast('❗ 至少要有一個商品');return;} editProds.splice(i,1); renderProdEdit(); }
@@ -736,22 +828,32 @@ function onManualBuyChange() {
 function renderManualProducts(products) {
   const wrap = document.getElementById('m-products');
   wrap.innerHTML = products.map(p => `
-    <div style="background:var(--surface);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-size:14px;font-weight:700">${p.emoji} ${p.name}</div>
-        <div style="font-size:12px;color:var(--muted)">$${p.price} 元</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="qbtn" onclick="chManualQ('${p.id}',${p.price},-1)">−</button>
-        <div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;min-width:24px;text-align:center" id="mq-${p.id}">0</div>
-        <button class="qbtn" onclick="chManualQ('${p.id}',${p.price},1)">+</button>
+    <div style="background:var(--surface);border-radius:10px;padding:12px">
+      ${p.imageUrl ? `<img src="${p.imageUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px" onerror="this.style.display='none'">` : ''}
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:700">${p.emoji} ${p.name}</div>
+          <div style="font-size:12px;margin-top:2px">
+            ${p.origPrice ? `<span style="color:var(--muted);text-decoration:line-through;margin-right:4px">$${p.origPrice}</span>` : ''}
+            <span style="color:var(--red);font-weight:700">$${p.price}</span>
+            ${p.maxQty ? `<span style="color:var(--muted);font-size:11px;margin-left:6px">限購${p.maxQty}</span>` : ''}
+          </div>
+          ${p.note ? `<div style="font-size:11px;color:#b45309;margin-top:2px">${p.note}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="qbtn" onclick="chManualQ('${p.id}',${p.price},-1)">−</button>
+          <div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;min-width:24px;text-align:center" id="mq-${p.id}">0</div>
+          <button class="qbtn" onclick="chManualQ('${p.id}',${p.price},1,${p.maxQty||99})">+</button>
+        </div>
       </div>
     </div>`).join('');
 }
 
-function chManualQ(id, price, d) {
-  manualCart[id] = manualCart[id] || { qty: 0, price };
-  manualCart[id].qty = Math.max(0, manualCart[id].qty + d);
+function chManualQ(id, price, d, maxQty) {
+  manualCart[id] = manualCart[id] || { qty: 0, price, maxQty: maxQty || 99 };
+  const newQty = manualCart[id].qty + d;
+  if (d > 0 && newQty > (maxQty || 99)) { toast(`❗ 此商品每人限購 ${maxQty} 份`); return; }
+  manualCart[id].qty = Math.max(0, newQty);
   if (manualCart[id].qty === 0) delete manualCart[id];
   const el = document.getElementById('mq-' + id);
   if (el) el.textContent = manualCart[id]?.qty || 0;
