@@ -297,6 +297,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
         <button class="btn btn-dark btn-full btn-sm" onclick="genNotice('close')">🔒 截止公告</button>
         <div class="notice-out" id="n-out"></div>
         <div id="n-btns" style="display:none;display:flex;gap:8px;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border-radius:10px">
+            <input type="checkbox" id="notify-mention-all" style="width:16px;height:16px;cursor:pointer">
+            <label for="notify-mention-all" style="font-size:13px;font-weight:700;cursor:pointer">📣 加上 @all 通知所有成員</label>
+          </div>
           <button class="btn btn-xs btn-green btn-full" onclick="cpTxt('n-out')">📋 複製訊息</button>
           <button class="btn btn-xs btn-line btn-full" onclick="sendToLine()">📤 Bot 發送到群組</button>
         </div>
@@ -561,13 +565,20 @@ async function loadUnpicked() {
     html += '</div>';
   });
 
-  html += `<button class="btn btn-line btn-full btn-sm" onclick="sendUnpickedNotify(\`${notifyText.replace(/`/g,"'")}\`)">📤 Bot 發送催領通知</button>`;
+  html += `
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--surface);border-radius:10px">
+      <input type="checkbox" id="unpicked-mention-all" style="width:16px;height:16px;cursor:pointer">
+      <label for="unpicked-mention-all" style="font-size:13px;font-weight:700;cursor:pointer">📣 加上 @all 通知所有成員</label>
+    </div>
+    <div style="height:8px"></div>
+    <button class="btn btn-line btn-full btn-sm" onclick="sendUnpickedNotify(\`${notifyText.replace(/`/g,"'")}\`)">📤 Bot 發送催領通知</button>`;
   html += `<div style="height:6px"></div><button class="btn btn-outline btn-full btn-sm" onclick="navigator.clipboard?.writeText(\`${notifyText.replace(/`/g,"'")}\`);toast('✅ 已複製！')">📋 複製通知文字</button>`;
   body.innerHTML = html;
 }
 
 async function sendUnpickedNotify(msg) {
-  const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:msg });
+  const mentionAll = document.getElementById('unpicked-mention-all')?.checked || false;
+  const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:msg, mentionAll });
   if (res.error) toast('❌ '+res.error);
   else toast('✅ 已發送到群組！');
 }
@@ -659,7 +670,8 @@ async function genNotice(type) {
 
 async function sendToLine() {
   if (!lastNotice) { toast('❗ 請先生成通知內容'); return; }
-  const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:lastNotice });
+  const mentionAll = document.getElementById('notify-mention-all')?.checked || false;
+  const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:lastNotice, mentionAll });
   if (res.error) toast('❌ '+res.error);
   else toast('✅ 已發送到群組！');
 }
