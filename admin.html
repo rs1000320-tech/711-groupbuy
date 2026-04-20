@@ -596,6 +596,8 @@ async function sendCopyToLine() {
   if (res.error) toast('❌ ' + res.error);
   else toast('✅ 已發送到群組！');
 }
+
+async function sendUnpickedNotify(msg) {
   const mentionAll = document.getElementById('unpicked-mention-all')?.checked || false;
   const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:msg, mentionAll });
   if (res.error) toast('❌ '+res.error);
