@@ -219,37 +219,49 @@ function renderProducts(products) {
   const wrap = document.getElementById('prods');
   if (!wrap) return;
   wrap.innerHTML = products.map(p => `
-    <div class="pc" id="pc-${p.id}" onclick="selP('${p.id}',${p.price})">
-      <div class="pc-em">${p.emoji}</div>
-      <div class="pc-info">
-        <div class="pc-name">${p.name}</div>
-        ${p.desc ? `<div class="pc-desc">${p.desc}</div>` : ''}
-        <div class="qrow" id="qr-${p.id}">
-          <div class="qctrl">
-            <button class="qbtn" onclick="chQ(event,'${p.id}',${p.price},-1)">−</button>
-            <div class="qnum" id="qn-${p.id}">1</div>
-            <button class="qbtn" onclick="chQ(event,'${p.id}',${p.price},1)">+</button>
+    <div class="pc" id="pc-${p.id}" onclick="selP('${p.id}',${p.price},${p.maxQty||99})">
+      ${p.imageUrl ? `<img src="${p.imageUrl}" style="width:100%;border-radius:10px;object-fit:cover;max-height:180px;margin-bottom:10px;display:block" onerror="this.style.display='none'">` : ''}
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div class="pc-em">${p.emoji}</div>
+        <div class="pc-info" style="flex:1">
+          <div class="pc-name">${p.name}</div>
+          ${p.note ? `<div style="font-size:11px;background:#fff7e6;color:#b45309;padding:2px 7px;border-radius:4px;display:inline-block;margin-top:3px;font-weight:700">${p.note}</div>` : ''}
+          ${p.maxQty ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">每人限購 ${p.maxQty} 份</div>` : ''}
+          <div class="qrow" id="qr-${p.id}">
+            <div class="qctrl">
+              <button class="qbtn" onclick="chQ(event,'${p.id}',${p.price},-1,${p.maxQty||99})">−</button>
+              <div class="qnum" id="qn-${p.id}">1</div>
+              <button class="qbtn" onclick="chQ(event,'${p.id}',${p.price},1,${p.maxQty||99})">+</button>
+            </div>
+            <div class="qsub" id="qs-${p.id}">$${p.price}</div>
           </div>
-          <div class="qsub" id="qs-${p.id}">$${p.price}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${p.origPrice ? `<div style="font-size:11px;color:var(--muted);text-decoration:line-through">$${p.origPrice}</div>` : ''}
+          <div class="pc-price">$${p.price}</div>
         </div>
       </div>
-      <div class="pc-price">$${p.price}</div>
     </div>`).join('');
 }
 
-function selP(id, price) {
+function selP(id, price, maxQty) {
   const card = document.getElementById('pc-' + id);
   const qrow = document.getElementById('qr-' + id);
   if (card.classList.contains('sel')) return;
   card.classList.add('sel'); qrow.classList.add('show');
-  if (!cart[id]) cart[id] = { qty: 1, price };
+  if (!cart[id]) cart[id] = { qty: 1, price, maxQty: maxQty || 99 };
   updQ(id); updTotal();
 }
 
-function chQ(e, id, price, d) {
+function chQ(e, id, price, d, maxQty) {
   e.stopPropagation();
-  cart[id] = cart[id] || { qty: 0, price };
-  cart[id].qty = Math.max(0, cart[id].qty + d);
+  cart[id] = cart[id] || { qty: 0, price, maxQty: maxQty || 99 };
+  const newQty = cart[id].qty + d;
+  if (d > 0 && newQty > cart[id].maxQty) {
+    toast(`❗ 此商品每人限購 ${cart[id].maxQty} 份`);
+    return;
+  }
+  cart[id].qty = Math.max(0, newQty);
   if (cart[id].qty === 0) {
     document.getElementById('pc-' + id).classList.remove('sel');
     document.getElementById('qr-' + id).classList.remove('show');
