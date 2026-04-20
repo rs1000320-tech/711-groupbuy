@@ -445,41 +445,6 @@ function renderProdEdit() {
     </div>`).join('<div style="height:1px;background:var(--border)"></div>');
 }
 
-async function uploadImg(event, idx) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const statusEl = document.getElementById('img-status-' + idx);
-  statusEl.style.display = 'block';
-  statusEl.textContent = '⏳ 上傳中…';
-
-  // 壓縮圖片（最大 800px）
-  const compressed = await compressImage(file, 800);
-  const base64 = compressed.split(',')[1];
-
-  const res = await api({
-    action: 'uploadImage',
-    adminKey: CONFIG.ADMIN_KEY,
-    imageData: base64,
-    fileName: file.name,
-    mimeType: file.type,
-  });
-
-  if (res.error) {
-    statusEl.textContent = '❌ 上傳失敗：' + res.error;
-    return;
-  }
-
-  editProds[idx].imageUrl = res.imageUrl;
-  statusEl.textContent = '✅ 上傳成功！';
-  setTimeout(() => { renderProdEdit(); }, 800);
-}
-
-function removeImg(idx) {
-  editProds[idx].imageUrl = '';
-  renderProdEdit();
-}
-
 function compressImage(file, maxSize) {
   return new Promise(resolve => {
     const reader = new FileReader();
@@ -494,12 +459,44 @@ function compressImage(file, maxSize) {
         }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
+}
+
+async function uploadImg(event, idx) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('img-status-' + idx);
+  statusEl.style.display = 'block';
+  statusEl.textContent = '⏳ 壓縮中…';
+
+  // 壓縮到最大 600px，品質 0.7
+  const compressed = await compressImage(file, 600);
+
+  // 確認大小
+  const sizeKB = Math.round((compressed.length * 3/4) / 1024);
+  statusEl.textContent = `⏳ 上傳中（${sizeKB}KB）…`;
+
+  const base64 = compressed.split(',')[1];
+  const res = await api({
+    action: 'uploadImage',
+    adminKey: CONFIG.ADMIN_KEY,
+    imageData: base64,
+    fileName: `prod_${Date.now()}.jpg`,
+    mimeType: 'image/jpeg',
+  });
+
+  if (res.error) {
+    statusEl.textContent = '❌ ' + res.error;
+    return;
+  }
+  editProds[idx].imageUrl = res.imageUrl;
+  statusEl.textContent = '✅ 上傳成功！';
+  setTimeout(() => renderProdEdit(), 800);
 }
 function pickEmoji(i) { editProds[i].emoji = EMOJIS[(EMOJIS.indexOf(editProds[i].emoji)+1)%EMOJIS.length]; renderProdEdit(); }
 function addProdRow() { editProds.push({name:'',price:'',emoji:'🛍',desc:''}); renderProdEdit(); }
