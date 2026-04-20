@@ -440,7 +440,6 @@ function renderProdEdit() {
           <span>${p.imageUrl ? '換一張照片' : '點擊上傳照片'}</span>
           <input type="file" accept="image/*" style="display:none" onchange="uploadImg(event,${i})">
         </label>
-        <div id="img-status-${i}" style="font-size:11px;color:var(--muted);margin-top:4px;display:none"></div>
       </div>
     </div>`).join('<div style="height:1px;background:var(--border)"></div>');
 }
@@ -470,33 +469,31 @@ function compressImage(file, maxSize) {
 async function uploadImg(event, idx) {
   const file = event.target.files[0];
   if (!file) return;
-  const statusEl = document.getElementById('img-status-' + idx);
-  statusEl.style.display = 'block';
-  statusEl.textContent = '⏳ 壓縮中…';
 
-  // 壓縮到最大 600px，品質 0.7
-  const compressed = await compressImage(file, 600);
+  toast('⏳ 壓縮中…');
 
-  // 確認大小
-  const sizeKB = Math.round((compressed.length * 3/4) / 1024);
-  statusEl.textContent = `⏳ 上傳中（${sizeKB}KB）…`;
+  try {
+    const compressed = await compressImage(file, 600);
+    const sizeKB = Math.round((compressed.length * 3/4) / 1024);
+    toast(`⏳ 上傳中（${sizeKB}KB）…`);
 
-  const base64 = compressed.split(',')[1];
-  const res = await api({
-    action: 'uploadImage',
-    adminKey: CONFIG.ADMIN_KEY,
-    imageData: base64,
-    fileName: `prod_${Date.now()}.jpg`,
-    mimeType: 'image/jpeg',
-  });
+    const base64 = compressed.split(',')[1];
+    const res = await api({
+      action: 'uploadImage',
+      adminKey: CONFIG.ADMIN_KEY,
+      imageData: base64,
+      fileName: `prod_${Date.now()}.jpg`,
+      mimeType: 'image/jpeg',
+    });
 
-  if (res.error) {
-    statusEl.textContent = '❌ ' + res.error;
-    return;
+    if (res.error) { toast('❌ ' + res.error); return; }
+
+    editProds[idx].imageUrl = res.imageUrl;
+    toast('✅ 上傳成功！');
+    renderProdEdit();
+  } catch(e) {
+    toast('❌ 上傳失敗：' + e.message);
   }
-  editProds[idx].imageUrl = res.imageUrl;
-  statusEl.textContent = '✅ 上傳成功！';
-  setTimeout(() => renderProdEdit(), 800);
 }
 function pickEmoji(i) { editProds[i].emoji = EMOJIS[(EMOJIS.indexOf(editProds[i].emoji)+1)%EMOJIS.length]; renderProdEdit(); }
 function addProdRow() { editProds.push({name:'',price:'',emoji:'🛍',desc:''}); renderProdEdit(); }
