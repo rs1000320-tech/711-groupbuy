@@ -151,8 +151,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
         <div class="ai-panel" id="ai-cp">
           <div class="ai-chip">✦ AI 文案</div>
           <div id="ai-cp-txt" class="ai-txt"></div>
-          <div style="display:flex;gap:6px;margin-top:10px">
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
             <button class="btn btn-xs btn-red" onclick="cpTxt('ai-cp-txt')">📋 複製</button>
+            <button class="btn btn-xs btn-line" onclick="sendCopyToLine()">📤 發到群組</button>
             <button class="btn btn-xs" style="background:rgba(255,255,255,.15);color:#fff;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit" onclick="aiGenCopy()">🔄 重生成</button>
           </div>
         </div>
@@ -424,11 +425,11 @@ async function createBuy() {
   const res = await api({ action:'createBuy', adminKey:CONFIG.ADMIN_KEY, title, deadline:new Date(`${date}T${time}:00`).toISOString(), payment:pay, products:validProds.map(p=>({name:p.name,price:Number(p.price),emoji:p.emoji,desc:p.desc||''})) });
   if (res.error) { toast('❌ '+res.error); return; }
 
-  toast('✅ 開團成功！');
   currentBuy = { id: res.buyId, title };
   const link = `https://liff.line.me/2009774173-GjL4NQ1g?buyId=${res.buyId}`;
+  toast('✅ 開團成功！點 AI 文案生成含連結的公告');
   document.getElementById('ai-cp').style.display = 'block';
-  document.getElementById('ai-cp-txt').textContent = `📌 此團專屬下單連結：\n${link}\n\n複製後貼到 LINE 記事本底部，成員點擊即可下單！`;
+  document.getElementById('ai-cp-txt').textContent = `📌 此團專屬連結：\n${link}\n\n✨ 點上方「AI 文案」按鈕，生成含連結的開團公告，再點「📤 發到群組」一鍵發送！`;
 }
 
 // ══ AI 文案 ══
@@ -437,16 +438,28 @@ async function aiGenCopy() {
   const txt   = document.getElementById('ai-cp-txt');
   panel.style.display = 'block';
   txt.innerHTML = '<span style="color:rgba(255,255,255,.5);font-size:12px">生成中 <span class="dots"><span></span><span></span><span></span></span></span>';
-  const title = document.getElementById('f-title').value||'7-11 限定團購';
+
+  const title = document.getElementById('f-title').value || '7-11 限定團購';
   const prods = editProds.filter(p=>p.name&&p.price).map(p=>`${p.emoji}${p.name} $${p.price}`).join('、');
-  const dl    = document.getElementById('f-date').value+' '+document.getElementById('f-time').value;
+  const dl    = document.getElementById('f-date').value + ' ' + document.getElementById('f-time').value;
   const pay   = document.getElementById('f-pay').value;
+
+  // 如果已經開團，帶入專屬連結；否則用預留位置
+  const buyLink = currentBuy
+    ? `https://liff.line.me/2009774173-GjL4NQ1g?buyId=${currentBuy.id}`
+    : '（開團後自動產生）';
+
   try {
-    const res = await api({ action:'aiProxy', adminKey:CONFIG.ADMIN_KEY, prompt:`你是 7-11 門市 LINE 群組店員，請寫一則記事本團購公告。要求：繁體中文、emoji、親切活潑、含商品清單+截止+下單方式+付款，150字內，格式清楚。\n團購：${title} | 商品：${prods} | 截止：${dl} | 付款：${pay} | 下單：點記事本連結（10秒）` });
+    const res = await api({ action:'aiProxy', adminKey:CONFIG.ADMIN_KEY,
+      prompt:`你是 7-11 門市 LINE 群組店員，請寫一則記事本團購公告。
+要求：繁體中文、emoji、親切活潑、含商品清單+截止+付款，150字內，格式清楚。
+最後一行固定寫：📲 點連結下單 👉 ${buyLink}
+團購：${title} | 商品：${prods} | 截止：${dl} | 付款：${pay}` });
     if (res.error) throw new Error(res.error);
     typewriter(txt, res.text);
   } catch(e) {
-    typewriter(txt, `🍱【${title}】開囉！\n\n${prods.split('、').join('\n')}\n\n⏰ 截止：${dl}\n💳 ${pay}\n\n📲 點連結下單！`);
+    const fallback = `🍱【${title}】開囉！\n\n${editProds.filter(p=>p.name&&p.price).map(p=>`${p.emoji} ${p.name} $${p.price}`).join('\n')}\n\n⏰ 截止：${dl}\n💳 ${pay}\n\n📲 點連結下單 👉 ${buyLink}`;
+    typewriter(txt, fallback);
   }
 }
 
@@ -576,7 +589,13 @@ async function loadUnpicked() {
   body.innerHTML = html;
 }
 
-async function sendUnpickedNotify(msg) {
+async function sendCopyToLine() {
+  const msg = document.getElementById('ai-cp-txt').textContent;
+  if (!msg || msg.includes('生成中')) { toast('❗ 請先生成文案'); return; }
+  const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:msg });
+  if (res.error) toast('❌ ' + res.error);
+  else toast('✅ 已發送到群組！');
+}
   const mentionAll = document.getElementById('unpicked-mention-all')?.checked || false;
   const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:msg, mentionAll });
   if (res.error) toast('❌ '+res.error);
