@@ -122,6 +122,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
   <!-- TOP TABS -->
   <div class="topbar">
     <button class="tab-btn active" onclick="switchTab('open')">🆕 開團</button>
+    <button class="tab-btn" onclick="switchTab('manual')">✍️ 建單</button>
     <button class="tab-btn" onclick="switchTab('orders')">📊 訂單</button>
     <button class="tab-btn" onclick="switchTab('pickup')">🏪 取貨</button>
     <button class="tab-btn" onclick="switchTab('report')">📈 報表</button>
@@ -166,6 +167,67 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--surface);color:var(-
           <div><div style="font-weight:700;font-size:14px">開啟試算表</div><div style="font-size:11px;opacity:.7;margin-top:2px">訂單即時同步</div></div>
           <span style="margin-left:auto;font-size:18px">→</span>
         </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: 手動建單 ── -->
+  <div id="tab-manual" class="tab-content">
+    <div class="card" style="margin-top:10px">
+      <div class="card-head">
+        <div class="card-ttl">✍️ 手動建單（+1 留言）</div>
+      </div>
+      <div class="card-body">
+        <div style="background:#fff7e6;border-left:3px solid var(--orange);border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:#5a3a00;margin-bottom:12px;line-height:1.6">
+          ⚠️ 專為記事本 +1 留言的客人建立訂單，無需手機末3碼，取貨時用姓名查詢。
+        </div>
+
+        <!-- 選擇團購 -->
+        <div class="fld">
+          <label class="flbl">選擇團購</label>
+          <select class="finp" id="m-buy-select" onchange="onManualBuyChange()">
+            <option value="">-- 選擇團購 --</option>
+          </select>
+        </div>
+
+        <!-- 客人名字 -->
+        <div class="fld">
+          <label class="flbl">客人姓名（記事本留言名稱）</label>
+          <input class="finp" id="m-name" placeholder="例：王小明">
+        </div>
+
+        <!-- 商品選擇 -->
+        <div class="fld">
+          <label class="flbl">選擇商品</label>
+          <div id="m-products" style="display:flex;flex-direction:column;gap:8px">
+            <div style="color:var(--muted);font-size:13px">請先選擇團購</div>
+          </div>
+        </div>
+
+        <!-- 備註 -->
+        <div class="fld">
+          <label class="flbl">備註（可空白）</label>
+          <input class="finp" id="m-note" placeholder="例：+1 留言，已電話確認">
+        </div>
+
+        <!-- 合計預覽 -->
+        <div style="background:var(--surface);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:700;color:var(--muted)">合計金額</span>
+          <span style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:var(--green)" id="m-total">$0</span>
+        </div>
+
+        <button class="btn btn-red btn-full" onclick="submitManualOrder()">✅ 建立訂單</button>
+      </div>
+    </div>
+
+    <!-- 今日手動建單紀錄 -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-head">
+        <div class="card-ttl">📋 手動建單記錄</div>
+        <button class="btn btn-xs btn-outline" onclick="loadManualOrders()">🔄</button>
+      </div>
+      <div class="card-body" id="manual-orders-body">
+        <div style="text-align:center;color:var(--muted);font-size:13px;padding:16px">點 🔄 載入記錄</div>
       </div>
     </div>
   </div>
@@ -309,6 +371,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   event.target.classList.add('active');
+  if (name === 'manual') initManualTab();
 }
 
 // ══ 開團 ══
@@ -453,10 +516,10 @@ async function doSearch() {
   wrap.innerHTML = res.results.map(r => `
     <div class="result-card unpicked">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div style="font-size:14px;font-weight:900">${r.displayName}</div>
+        <div style="font-size:14px;font-weight:900">${r.displayName} ${r.isManual ? '<span style="font-size:10px;background:#fff7e6;color:var(--orange);padding:1px 6px;border-radius:10px;font-weight:700">+1留言</span>' : ''}</div>
         <span class="badge badge-wait">${r.pickupStatus}</span>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">📦 ${r.buyTitle} ｜ 末3碼：${r.phoneLast3||'未填'}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">📦 ${r.buyTitle}${r.phoneLast3 ? ' ｜ 末3碼：'+r.phoneLast3 : ''}</div>
       <div style="font-size:13px;margin-bottom:8px">${r.itemsStr}｜<b>$${r.total}</b></div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-green btn-xs" onclick="markPickup('${r.id}','已取貨',this)">✅ 確認取貨</button>
@@ -605,6 +668,115 @@ async function testBot() {
   const res = await api({ action:'sendLineNotify', adminKey:CONFIG.ADMIN_KEY, message:'🤖 Bot 測試訊息，系統運作正常！' });
   if (res.error) toast('❌ '+res.error);
   else toast('✅ Bot 發送成功！');
+}
+
+// ══ 手動建單 ══
+let manualBuyData = null;
+let manualCart = {};
+
+async function initManualTab() {
+  // 載入所有開放中的團購到下拉選單
+  const res = await api({ action: 'getAllBuys' });
+  const select = document.getElementById('m-buy-select');
+  select.innerHTML = '<option value="">-- 選擇團購 --</option>';
+  if (!res.error && res.buys) {
+    res.buys.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      opt.textContent = b.title;
+      opt.dataset.buy = JSON.stringify(b);
+      select.appendChild(opt);
+    });
+  }
+}
+
+function onManualBuyChange() {
+  const select = document.getElementById('m-buy-select');
+  const opt = select.options[select.selectedIndex];
+  if (!opt.value) { manualBuyData = null; manualCart = {}; document.getElementById('m-products').innerHTML = '<div style="color:var(--muted);font-size:13px">請先選擇團購</div>'; updManualTotal(); return; }
+  manualBuyData = JSON.parse(opt.dataset.buy);
+  manualCart = {};
+  renderManualProducts(manualBuyData.products);
+  updManualTotal();
+}
+
+function renderManualProducts(products) {
+  const wrap = document.getElementById('m-products');
+  wrap.innerHTML = products.map(p => `
+    <div style="background:var(--surface);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:14px;font-weight:700">${p.emoji} ${p.name}</div>
+        <div style="font-size:12px;color:var(--muted)">$${p.price} 元</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="qbtn" onclick="chManualQ('${p.id}',${p.price},-1)">−</button>
+        <div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;min-width:24px;text-align:center" id="mq-${p.id}">0</div>
+        <button class="qbtn" onclick="chManualQ('${p.id}',${p.price},1)">+</button>
+      </div>
+    </div>`).join('');
+}
+
+function chManualQ(id, price, d) {
+  manualCart[id] = manualCart[id] || { qty: 0, price };
+  manualCart[id].qty = Math.max(0, manualCart[id].qty + d);
+  if (manualCart[id].qty === 0) delete manualCart[id];
+  const el = document.getElementById('mq-' + id);
+  if (el) el.textContent = manualCart[id]?.qty || 0;
+  updManualTotal();
+}
+
+function updManualTotal() {
+  const total = Object.values(manualCart).reduce((s, v) => s + v.qty * v.price, 0);
+  document.getElementById('m-total').textContent = '$' + total;
+}
+
+async function submitManualOrder() {
+  const name = document.getElementById('m-name').value.trim();
+  const note = document.getElementById('m-note').value.trim();
+  if (!manualBuyData) { toast('❗ 請選擇團購'); return; }
+  if (!name) { toast('❗ 請輸入客人姓名'); return; }
+  if (!Object.keys(manualCart).length) { toast('❗ 請選擇至少一樣商品'); return; }
+
+  const items = Object.entries(manualCart).map(([id, v]) => ({ id, qty: v.qty }));
+  const res = await api({
+    action: 'submitManualOrder',
+    adminKey: CONFIG.ADMIN_KEY,
+    groupBuyId: manualBuyData.id,
+    displayName: name,
+    items,
+    note,
+  });
+
+  if (res.error) { toast('❌ ' + res.error); return; }
+  toast(`✅ 已為「${name}」建立訂單！`);
+
+  // 清空表單
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-note').value = '';
+  manualCart = {};
+  renderManualProducts(manualBuyData.products);
+  updManualTotal();
+  loadManualOrders();
+}
+
+async function loadManualOrders() {
+  const body = document.getElementById('manual-orders-body');
+  body.innerHTML = '<div style="text-align:center;padding:12px"><div class="spinner" style="margin:0 auto"></div></div>';
+  const res = await api({ action: 'getManualOrders', adminKey: CONFIG.ADMIN_KEY });
+  if (res.error) { body.innerHTML = `<div style="color:var(--red);font-size:13px;padding:8px">${res.error}</div>`; return; }
+  if (!res.orders.length) { body.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">尚無手動建單記錄</div>'; return; }
+  body.innerHTML = res.orders.map(o => `
+    <div class="orow">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">✍️</div>
+      <div style="flex:1;min-width:0">
+        <div class="oname">${o.displayName} <span style="font-size:10px;background:#fff7e6;color:var(--orange);padding:1px 6px;border-radius:10px;font-weight:700">手動</span></div>
+        <div class="odtl">${o.itemsStr}${o.note ? '｜'+o.note : ''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="oamt">$${o.total}</div>
+        <span class="badge ${o.pickupStatus==='已取貨'?'badge-done':'badge-wait'}">${o.pickupStatus||'待取貨'}</span>
+      </div>
+    </div>`).join('');
 }
 
 // ══ 工具 ══
