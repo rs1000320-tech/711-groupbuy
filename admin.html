@@ -510,7 +510,7 @@ async function createBuy() {
   const validProds = editProds.filter(p=>p.name&&p.price);
   if (!validProds.length) { toast('❗ 請至少填寫一個商品'); return; }
 
-  const res = await api({ action:'createBuy', adminKey:CONFIG.ADMIN_KEY, title, deadline:new Date(`${date}T${time}:00`).toISOString(), payment:pay, products:validProds.map(p=>({name:p.name,price:Number(p.price),emoji:p.emoji,desc:p.desc||''})) });
+  const res = await api({ action:'createBuy', adminKey:CONFIG.ADMIN_KEY, title, deadline:new Date(`${date}T${time}:00`).toISOString(), payment:pay, products:validProds.map(p=>({name:p.name, price:Number(p.price), emoji:p.emoji, desc:p.desc||'', origPrice:p.origPrice?Number(p.origPrice):null, imageUrl:p.imageUrl||'', maxQty:p.maxQty?Number(p.maxQty):null, note:p.note||''})) });
   if (res.error) { toast('❌ '+res.error); return; }
 
   currentBuy = { id: res.buyId, title };
